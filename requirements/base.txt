@@ -1,0 +1,10 @@
+# Python >= 3.10. Versiones directas conservadas del proyecto de origen.
+Django==5.2.8
+django-environ==0.11.2
+djangorestframework==3.16.1
+djangorestframework-simplejwt==5.5.1
+drf-spectacular==0.29.0
+django-cors-headers==4.9.0
+django-model-utils==5.0.0
+celery==5.5.3
+redis==7.1.0

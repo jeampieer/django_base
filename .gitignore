@@ -1,0 +1,12 @@
+.env
+!.env.example
+.venv/
+.runtime/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.import_linter_cache/
+.coverage
+htmlcov/
+*.sqlite3
+schema.json

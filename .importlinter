@@ -1,0 +1,39 @@
+[importlinter]
+root_packages =
+    applications
+    core
+    config
+contract_types =
+    bounded_contexts: tools.import_contracts.BoundedContextsContract
+
+[importlinter:contract:contexts]
+# users no tiene excepción de imports: usar settings.AUTH_USER_MODEL/get_user_model
+# desde django.contrib.auth; sus modelos e internals siguen siendo privados.
+name = Los modulos solo consumen services o public de otros modulos
+type = bounded_contexts
+
+[importlinter:contract:layers]
+name = Entrada hacia services y selectors hacia models
+type = layers
+containers = applications.*
+layers =
+    (api_views) : (tasks)
+    (schemas)
+    (services)
+    (selectors)
+    (serializers) : (permissions) : (policies)
+    (models)
+
+[importlinter:contract:core]
+name = Core no depende de applications ni config
+type = forbidden
+source_modules = core
+forbidden_modules =
+    applications
+    config
+
+[importlinter:contract:settings]
+name = Los modulos no importan config
+type = forbidden
+source_modules = applications
+forbidden_modules = config

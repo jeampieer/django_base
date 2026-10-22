@@ -12,5 +12,9 @@
 - [ ] Declarar la capacidad de la policy y asignarla a roles en `USER_ROLES`; no basarse en `is_staff`.
 - [ ] Añadir permisos por objeto cuando aplique y revalidarlos en el service; probar el límite de imports con `users`.
 - [ ] Si requiere Celery/comando/interfaz pública, crear únicamente esa pieza.
-- [ ] Probar flujos, reglas, errores y rollback; evitar imports de modelos ajenos.
-- [ ] Ejecutar flake8, `lint-imports`, checks, `makemigrations --check`, OpenAPI y pytest con PostgreSQL.
+- [ ] Incluir tests de comportamiento para todo código nuevo del módulo: flujos, reglas, errores y rollback;
+  evitar imports de modelos ajenos.
+- [ ] Ejecutar flake8, `lint-imports`, checks, `makemigrations --check`, OpenAPI y
+  `pytest --cov --cov-report=term-missing` con PostgreSQL.
+- [ ] Revisar las líneas sin cubrir del módulo y cumplir el mínimo global de `.coveragerc`;
+  no añadir exclusiones ni tests artificiales para aumentar el porcentaje.

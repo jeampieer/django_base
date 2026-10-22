@@ -46,5 +46,5 @@ jobs:
           python manage.py makemigrations --check --dry-run
       - name: Validar OpenAPI
         run: python manage.py spectacular --validate --fail-on-warn --format openapi-json --file schema.json
-      - name: Tests con PostgreSQL
-        run: pytest -v
+      - name: Tests con PostgreSQL y cobertura
+        run: pytest --cov --cov-report=term-missing

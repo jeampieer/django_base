@@ -26,7 +26,7 @@ documentos se contradicen, consulta antes de implementar la parte afectada.
 | Autenticación | JWT mediante djangorestframework-simplejwt |
 | Base de datos | PostgreSQL; SQLite para pruebas rápidas |
 | Tareas | Celery 5.5.3 con broker Redis |
-| Tests | pytest, pytest-django y model-bakery |
+| Tests | pytest, pytest-django, pytest-cov y model-bakery |
 | Documentación API | drf-spectacular; OpenAPI JSON |
 | Calidad | flake8==7.1.1 e import-linter==2.15 |
 
@@ -95,16 +95,22 @@ DJANGO_SETTINGS_MODULE=config.settings.local celery -A config worker --loglevel=
 
 Los tests viven en `tests/test_*.py` de cada módulo; los fixtures compartidos,
 en `conftest.py`. Usa pytest-django y model-bakery; prueba services sin HTTP,
-autorización, rollback y contratos de endpoints. No hay umbral numérico de cobertura.
+autorización, rollback y contratos de endpoints. Todo código nuevo de un módulo
+incluye tests de su comportamiento. La suite completa mide `applications` y
+`core` y exige un mínimo global de cobertura de líneas del 85 %, configurable
+únicamente en [.coveragerc](.coveragerc). Consulta sus exclusiones y el alcance
+de la medición en [verificación](docs/verification.md).
 
 ```bash
-TEST_DATABASE_URL=sqlite://:memory: pytest -v
+TEST_DATABASE_URL=sqlite://:memory: pytest --cov --cov-report=term-missing
 TEST_DATABASE_URL=sqlite://:memory: pytest applications/users/tests/ -v
 ```
 
 SQLite omite dos pruebas de concurrencia. La comprobación completa requiere
-PostgreSQL mediante `TEST_DATABASE_URL`, como en CI. Los tests Celery usan
-modo eager y broker en memoria, sin Redis ni worker externo.
+PostgreSQL mediante `TEST_DATABASE_URL` y `pytest --cov --cov-report=term-missing`,
+como en CI. La ejecución de un módulo sirve para desarrollo y no sustituye la
+comprobación global de cobertura. Los tests Celery usan modo eager y broker en
+memoria, sin Redis ni worker externo.
 
 ---
 
@@ -157,7 +163,7 @@ DJANGO_SETTINGS_MODULE=config.settings.test python manage.py check
 DJANGO_SETTINGS_MODULE=config.settings.test python manage.py makemigrations --check --dry-run
 DJANGO_SETTINGS_MODULE=config.settings.test python manage.py show_urls
 DJANGO_SETTINGS_MODULE=config.settings.test python manage.py spectacular --validate --fail-on-warn --format openapi-json
-pytest -v
+pytest --cov --cov-report=term-missing
 ```
 
 Consulta el alcance de [verificación](docs/verification.md). Reporta resultados

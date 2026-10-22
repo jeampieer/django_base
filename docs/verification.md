@@ -1,11 +1,106 @@
 # Verificación de la plantilla
 
-Verificación realizada el 20 de octubre de 2026. Se usó un entorno virtual
+## Cobertura de líneas
+
+Instala las dependencias de `requirements/local.txt`, incluido
+`pytest-cov==7.0.0`, y ejecuta desde la raíz:
+
+```bash
+# Verificación completa, con TEST_DATABASE_URL apuntando a PostgreSQL aislado.
+pytest --cov --cov-report=term-missing
+
+# Verificación rápida; omite dos pruebas de concurrencia.
+TEST_DATABASE_URL=sqlite://:memory: pytest --cov --cov-report=term-missing
+```
+
+[.coveragerc](../.coveragerc) centraliza los paquetes `applications` y `core`,
+las exclusiones y el mínimo global de líneas mediante `fail_under = 85`.
+Para ajustar el umbral, edita únicamente ese valor. CI ejecuta el mismo comando
+completo con PostgreSQL y hereda el mínimo sin repetirlo en sus argumentos.
+`pytest.ini` conserva la configuración de descubrimiento de tests.
+
+Se omiten migraciones, tests, fixtures `conftest.py`, settings y `manage.py`.
+Los archivos sin líneas ejecutables, como los `__init__.py` vacíos, se ocultan
+con `skip_empty`; los `__init__.py` con código sí se miden. La selección de
+paquetes también deja fuera `config/`, `tools/` y dependencias externas, sin
+cambiar los tests descubiertos por pytest, incluidos los de `tools/`.
+La medición incluye archivos de los paquetes
+seleccionados aunque ningún test los importe. El reporte muestra dos decimales
+y las líneas pendientes por archivo.
+
+Todo código nuevo de un módulo incluye tests de comportamiento: services sin
+HTTP, autorización, errores, rollback y contratos de endpoints, según aplique.
+El mínimo global no sustituye esa obligación. Una ejecución parcial como
+`pytest applications/users/tests/ -v` sirve durante el desarrollo; para validar
+la entrega se ejecuta la suite completa con cobertura. Si queda por debajo del
+mínimo, se informa el porcentaje por paquete y los comportamientos que requieren
+pruebas, sin rebajar el umbral ni añadir tests artificiales.
+
+`.coverage`, `.coverage.*`, `htmlcov/` y `coverage.xml` están ignorados por Git.
+La verificación aislada usa un venv nuevo, solo las dependencias declaradas y
+configuración basada en `.env.example`, sin credenciales existentes. Los
+artefactos se guardan fuera del repositorio y se eliminan junto con el entorno
+y la instancia PostgreSQL al terminar.
+
+## Verificación con cobertura: 21 de octubre de 2026
+
+Se verificó una copia independiente de los entregables con un venv nuevo,
+Python 3.11.6, Django 5.2.8, pytest 9.0.1, pytest-cov 7.0.0 y su dependencia
+transitiva coverage.py 7.16.2. Solo se instalaron las dependencias declaradas en
+`requirements/local.txt` y sus transitivas. La copia usó `.env.example` sin
+secretos y una instancia temporal de PostgreSQL 14.17, sin bases existentes.
+
+| Comprobación | Resultado actual |
+|---|---|
+| `python -m pip check` | Sin dependencias incompatibles |
+| `flake8 .` | Sin hallazgos; código 0 |
+| `lint-imports --no-cache` | 4 contratos conservados, 0 rotos; 133 archivos, 222 dependencias |
+| `python manage.py check` | Sin errores |
+| `python manage.py makemigrations --check --dry-run` | Sin cambios |
+| `python manage.py show_urls` | 26 rutas |
+| `python manage.py spectacular --validate --fail-on-warn --format openapi-json` | Válido, sin warnings |
+| `pytest --cov --cov-report=term-missing` con PostgreSQL | **118 passed**, sin omisiones; **95,80 %**, código 0 |
+| `pytest --cov --cov-report=term-missing` con SQLite | **116 passed, 2 skipped**; **95,74 %**, código 0 |
+
+Los comandos Django usaron `config.settings.test`. El documento OpenAPI y los
+datos de cobertura se guardaron fuera del repositorio. La cobertura por paquete
+se calculó sumando líneas ejecutables y pendientes, sin promediar porcentajes
+de archivos. Estos son los resultados con PostgreSQL:
+
+| Paquete | Líneas ejecutables | Sin cubrir | Cobertura |
+|---|---:|---:|---:|
+| `applications` | 1037 | 20 | **98,07 %** |
+| `applications/example` | 284 | 0 | **100,00 %** |
+| `applications/users` | 753 | 20 | **97,34 %** |
+| `core` | 534 | 46 | **91,39 %** |
+| **Total (`applications` + `core`)** | **1571** | **66** | **95,80 %** |
+
+Las filas de los módulos desglosan `applications`; no se suman otra vez al total.
+Se comprobaron las exclusiones sobre los datos de cobertura y el reporte:
+19 archivos sin código ejecutable quedaron ocultos y los `__init__.py` con
+código siguieron medidos.
+
+Se leyó el comando de tests del workflow y se ejecutó localmente sin repetir ni
+sobrescribir el umbral. La suite completa superó el 85 %. Como control negativo,
+se ejecutó ese mismo comando seleccionando únicamente
+`applications/example/tests/test_label_statistics_selector.py`: el test pasó,
+pero la cobertura global fue **16,87 %** y pytest devolvió **código 1** por no
+alcanzar el mínimo heredado. No se añadieron ni modificaron tests.
+
+El workflow conserva PostgreSQL 16. No se ejecutó GitHub Actions ni se probó
+esa versión localmente; se verificaron sus comandos con PostgreSQL 14.17.
+Se comprobó que Git ignora `.coverage`, `.coverage.*`, `htmlcov/` y `coverage.xml`.
+La instancia PostgreSQL se detuvo y se eliminaron el venv, la copia, los logs
+y los artefactos temporales al terminar.
+
+## Verificación histórica: 20 de octubre de 2026
+
+Se usó un entorno virtual
 propio con Python 3.11.6, Django 5.2.8 y PostgreSQL 14.17 en una instancia
 temporal aislada. No se utilizaron las credenciales ni la base del proyecto padre.
 El workflow suministrado configura PostgreSQL 16; no se ejecutó GitHub Actions.
 
-## Resultados
+### Resultados históricos
 
 | Comando | Resultado |
 |---|---|
@@ -40,7 +135,7 @@ También se verificó una copia independiente de los archivos entregables, sin e
 entorno virtual, las caches ni los paquetes del repositorio padre. Los módulos
 se resolvieron desde esa copia y pasaron los mismos checks y los 118 tests.
 
-## Alcance de la comprobación
+### Alcance de la comprobación histórica
 
 - Los tests Celery corren en modo eager con broker en memoria; no se probó un
   worker conectado a Redis.
@@ -52,7 +147,7 @@ se resolvieron desde esa copia y pasaron los mismos checks y los 118 tests.
   muestra únicamente archivos nuevos bajo `template/`.
 - La instancia PostgreSQL temporal se detuvo después de la verificación.
 
-## Las siete correcciones documentales
+### Las siete correcciones documentales
 
 | Problema original | Corrección y ubicación |
 |---|---|

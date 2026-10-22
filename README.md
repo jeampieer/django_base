@@ -29,7 +29,7 @@ Código en inglés; documentación en español.
 | Base de datos | PostgreSQL; SQLite para tests rápidos |
 | Tareas | Celery 5.5.3 · broker Redis |
 | Documentación API | OpenAPI JSON mediante drf-spectacular |
-| Tests | pytest · pytest-django · model-bakery |
+| Tests | pytest · pytest-django · pytest-cov · model-bakery |
 | Calidad | flake8==7.1.1 · import-linter==2.15 |
 
 ---
@@ -157,7 +157,7 @@ los demás endpoints de usuarios.
 ## Tests y calidad
 
 ```bash
-TEST_DATABASE_URL=sqlite://:memory: pytest -v
+TEST_DATABASE_URL=sqlite://:memory: pytest --cov --cov-report=term-missing
 flake8 .
 lint-imports --no-cache
 DJANGO_SETTINGS_MODULE=config.settings.test python manage.py check
@@ -165,9 +165,13 @@ DJANGO_SETTINGS_MODULE=config.settings.test python manage.py spectacular --valid
 ```
 
 SQLite omite dos pruebas de concurrencia. Para ejecutarlas, configura
-`TEST_DATABASE_URL` con PostgreSQL y usa `pytest -v`, como en
+`TEST_DATABASE_URL` con PostgreSQL y usa `pytest --cov --cov-report=term-missing`, como en
 [CI](.github/workflows/ci.yml). Las pruebas de Celery usan modo eager y broker
 en memoria; no necesitan Redis ni worker externo.
+
+La cobertura de líneas mide `applications` y `core`, con mínimo global del 85 %
+configurado únicamente en [.coveragerc](.coveragerc). Todo código nuevo de un
+módulo incluye tests de comportamiento; revisa las líneas pendientes del reporte.
 
 Consulta el alcance y los resultados históricos en [verificación](docs/verification.md).
 

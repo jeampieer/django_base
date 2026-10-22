@@ -1,0 +1,17 @@
+[run]
+source =
+    applications
+    core
+omit =
+    */migrations/*
+    */tests/*
+    */conftest.py
+    */settings/*
+    manage.py
+
+[report]
+fail_under = 85
+precision = 2
+show_missing = True
+# Conservar los __init__.py con código; ocultar solo archivos sin líneas ejecutables.
+skip_empty = True

@@ -1,19 +1,65 @@
-# Plantilla de backend Django/DRF
+# django_base — API
 
-Backend REST con arquitectura modular por capas y Service Layer. Python ≥ 3.10
-(verificado con 3.11), Django 5.2.8, DRF 3.16.1, PostgreSQL y Celery 5.5.3.
-Código en inglés y documentación en español. No requiere el repositorio padre.
-Incluye `users` como módulo base y `example` como demostración de integración.
+Este proyecto es el resultado de años de trabajo refinando y mejorando la
+arquitectura de mis proyectos backend con Django. Reúne esa experiencia en una
+base reutilizable para nuevos proyectos.
 
-## Crear un proyecto nuevo
+Plantilla reutilizable de backend REST con Django y Django REST Framework.
+Incluye autenticación, gestión de usuarios y un módulo de ejemplo para construir
+nuevos proyectos con arquitectura modular por capas y Service Layer.
+Código en inglés; documentación en español.
 
-Desde la raíz del repositorio que contiene esta carpeta:
+---
+
+## ¿Qué ofrece esta plantilla?
+
+| Módulo | Uso | Descripción |
+| --- | --- | --- |
+| `users` | Base de identidad | Usuarios, roles configurables, JWT, sesiones y eventos de seguridad |
+| `example` | Demostración | Etiquetas y entradas: CRUD, filtros, estadísticas, finalización y tarea Celery |
+
+---
+
+## Stack
+
+| Capa | Tecnología |
+| --- | --- |
+| Framework | Python ≥ 3.10 (CI: 3.11) · Django 5.2.8 · DRF 3.16.1 |
+| Autenticación | JWT mediante djangorestframework-simplejwt |
+| Base de datos | PostgreSQL; SQLite para tests rápidos |
+| Tareas | Celery 5.5.3 · broker Redis |
+| Documentación API | OpenAPI JSON mediante drf-spectacular |
+| Tests | pytest · pytest-django · model-bakery |
+| Calidad | flake8==7.1.1 · import-linter==2.15 |
+
+---
+
+## Arquitectura
+
+**Arquitectura Modular por Capas con Service Layer.** Cada módulo es dueño de sus
+modelos, serializers, vistas, services, selectors, permisos y pruebas.
+El CRUD simple usa las vistas base de `core/`; los procesos con reglas de negocio
+usan services, responsables también de las transacciones.
+
+| Documento | Qué contiene |
+| --- | --- |
+| [Arquitectura](docs/architecture.md) | Responsabilidades, transacciones y límites entre módulos |
+| [Estructura de aplicaciones](docs/app-structure.md) | Carpetas, convenciones y patrones de implementación |
+
+---
+
+## Inicio rápido
+
+### Requisitos previos
+
+Python ≥ 3.10 y PostgreSQL para desarrollo. Redis se utiliza como broker si
+ejecutas el worker Celery; la API usa caché local en memoria. Docker es opcional.
+
+### Preparar el entorno
+
+Desde la raíz de este repositorio:
 
 ```bash
-rsync -a --exclude='.venv' --exclude='.runtime' --exclude='__pycache__' \
-  --exclude='.pytest_cache' --exclude='.import_linter_cache' \
-  template/ ../nuevo-backend/
-cd ../nuevo-backend
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements/local.txt
@@ -21,155 +67,130 @@ cp .env.example .env
 python -c 'from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())'
 ```
 
-Usa la clave generada como `SECRET_KEY` en `.env`. Ajusta las URLs de PostgreSQL y
-Redis, `ALLOWED_HOSTS` y los orígenes CORS. La configuración solo lee el `.env`
-de este proyecto y las variables de su proceso; no busca archivos en carpetas padre.
+Copia la clave generada a `SECRET_KEY` en `.env` y ajusta las conexiones locales.
+La configuración lee únicamente el `.env` de este proyecto y las variables
+del proceso.
 
-**Antes del primer migrate**, define los roles del proyecto en
-`config/settings/base.py`. `AUTH_USER_MODEL` ya es `users.User`, con UUID y
-auditoría. Si una copia anterior ya tiene una BD migrada con `auth.User`, cambiar
-ese setting requiere migraciones complejas: esta entrega no convierte ni borra
-esa BD. Para un proyecto nuevo sin datos, usa una base vacía. Ver [auth.md](docs/auth.md).
+### Variables de entorno para desarrollo
 
-Si necesitas servicios locales y tienes Docker, puedes crear instancias dedicadas:
+Valores de ejemplo, que debes adaptar a tu entorno:
+
+```dotenv
+DJANGO_SETTINGS_MODULE=config.settings.local
+SECRET_KEY=replace-with-a-random-secret-at-least-50-characters-long
+DATABASE_URL=postgres://backend:backend@127.0.0.1:5432/backend
+TEST_DATABASE_URL=postgres://backend:backend@127.0.0.1:5432/backend_test_source
+CELERY_BROKER_URL=redis://127.0.0.1:6379/0
+ALLOWED_HOSTS=localhost,127.0.0.1
+CORS_ALLOWED_ORIGINS=http://localhost:3000
+```
+
+Consulta las demás variables en [.env.example](.env.example).
+La cuenta de tests necesita permiso `CREATEDB`; usa una base dedicada.
+
+<details>
+<summary>Servicios locales con Docker (opcional)</summary>
+
+Estos contenedores usan las credenciales locales del ejemplo:
 
 ```bash
 docker run --name backend-postgres -d -p 5432:5432 \
   -e POSTGRES_USER=backend -e POSTGRES_PASSWORD=backend -e POSTGRES_DB=backend postgres:16
-docker exec backend-postgres createdb -U backend backend_test_source
 docker run --name backend-redis -d -p 6379:6379 redis:7
+```
+
+Cuando PostgreSQL esté listo, crea la base indicada en `TEST_DATABASE_URL`:
+
+```bash
+docker exec backend-postgres createdb -U backend backend_test_source
+```
+
+</details>
+
+### Base de datos y servidor
+
+Antes del primer `migrate`, revisa los roles de `config/settings/base.py`.
+`AUTH_USER_MODEL` ya es `users.User`; cambiarlo sobre una base existente requiere
+un plan de migración específico. Consulta [usuarios y autenticación](docs/auth.md).
+
+```bash
 python manage.py migrate
-python manage.py createsuperuser --username fictional.root --email root@example.test
+python manage.py createsuperuser
 python manage.py runserver
 ```
 
-El usuario de tests necesita permiso `CREATEDB`. Usa una instancia de desarrollo
-dedicada; pytest crea y elimina una base con prefijo `test_`.
+### Worker Celery
 
-En otra terminal del proyecto, con el entorno virtual activo:
+En otra terminal, con el entorno virtual activo y Redis disponible:
 
 ```bash
 DJANGO_SETTINGS_MODULE=config.settings.local celery -A config worker --loglevel=info
 ```
 
-## Autenticación y ejemplo
+---
 
-El comando solicita nombres, apellidos y contraseña. El username y correo
-mostrados son ficticios: sustitúyelos por los datos del nuevo proyecto. Crea un
-superusuario activo con el rol configurado en `USER_SUPERUSER_ROLE`.
+## Endpoints principales
 
-User utiliza username como login, email único, first_name, last_name, un rol,
-UUID y auditoría. Los nombres concretos de roles se configuran en settings;
-`is_staff` no concede permisos de API. Ejemplo ficticio incluido:
+| Método | URL | Descripción |
+| --- | --- | --- |
+| POST | `/api/v1/auth/token/` | Login con username y password; devuelve access, refresh y perfil |
+| POST | `/api/v1/auth/token/refresh/` | Obtener un access nuevo mediante refresh |
+| GET | `/api/v1/auth/me/` | Consultar el perfil propio |
+| GET · POST | `/api/v1/users/` | Listar y crear usuarios |
+| POST | `/api/v1/users/filter/` | Filtrar usuarios según el alcance del actor |
+| GET · PUT · PATCH · DELETE | `/api/v1/users/<uuid>/` | Consultar, editar perfil y desactivar |
+| POST | `/api/v1/users/change-password/` | Cambiar la contraseña propia |
+| GET · POST | `/api/v1/example/labels/` | Listar y crear etiquetas |
+| GET · POST | `/api/v1/example/entries/` | Listar y crear entradas |
+| POST | `/api/v1/example/entries/<uuid>/finalize/` | Finalizar una entrada mediante su service |
+| GET | `/health/ping/` | Comprobar el proceso; público |
+| GET | `/health/` | Comprobar base de datos y caché; público |
+| GET | `/api/schema/` | Documento OpenAPI JSON; requiere superusuario |
 
-```python
-USER_ROLES = {
-    "MANAGER": {"label": "Gestor (ejemplo)", "level": 10,
-                "permissions": ["users.manage", "example.write"]},
-    "MEMBER": {"label": "Miembro (ejemplo)", "level": 20, "permissions": []},
-}
-USER_DEFAULT_ROLE = "MEMBER"
-USER_SUPERUSER_ROLE = "MANAGER"
-```
+El login entrega los tokens en `data.access` y `data.refresh`.
+Envía el access como `Authorization: Bearer <access>`.
+El [contrato de autenticación](docs/auth.md) detalla permisos, revocación y
+los demás endpoints de usuarios.
 
-Menor nivel significa mayor jerarquía. Gestores administran roles inferiores;
-miembros editan su propio nombre/email y contraseña. Superusuarios administran
-todas las cuentas. No se permite autodesactivación ni perder el último
-superusuario activo. Para cambiar códigos, niveles o capacidades no se editan
-policies ni modelos; renombrar un código ya persistido exige migrar esos datos.
+---
 
-```bash
-curl -X POST http://127.0.0.1:8000/api/v1/auth/token/ \
-  -H 'Content-Type: application/json' \
-  -d '{"username":"fictional.root","password":"contraseña-del-nuevo-proyecto"}'
-```
-
-Usa `data.access` de la respuesta como `Authorization: Bearer <access>`. El refresh
-se envía a `POST /api/v1/auth/token/refresh/` con `{"refresh":"..."}`. Se conserva
-la configuración de origen: access de una hora, refresh de siete días, sin
-rotación. El refresh devuelve únicamente un access nuevo.
-
-| Endpoint | Uso |
-|---|---|
-| `/health/ping/` | GET público: proceso activo |
-| `/health/` | GET público: BD y cache; 503 si fallan |
-| `/api/schema/` | GET: OpenAPI JSON, requiere superusuario |
-| `/api/v1/auth/me/` | GET: perfil propio |
-| `/api/v1/auth/logout/` | POST: revoca refresh de todas las sesiones |
-| `/api/v1/users/` | GET paginado / POST mediante service |
-| `/api/v1/users/filter/` | POST de lectura con el alcance del actor |
-| `/api/v1/users/<uuid>/` | GET, PUT/PATCH de perfil y DELETE que solo desactiva |
-| `/api/v1/users/<uuid>/activate/` | POST de activación explícita |
-| `/api/v1/users/<uuid>/deactivate/` | POST de desactivación explícita |
-| `/api/v1/users/change-password/` | POST propio: current_password y new_password |
-| `/api/v1/users/<uuid>/change-password/` | POST: reseteo autorizado con new_password |
-| `/api/v1/users/<uuid>/change-role/` | POST: role autorizado por jerarquía |
-| `/api/v1/users/<uuid>/sessions/` | GET: intentos de autenticación paginados |
-| `/api/v1/users/<uuid>/security-events/` | GET: eventos paginados como actor/destinatario |
-| `/api/v1/example/labels/` | GET paginado y POST; CRUD sin service |
-| `/api/v1/example/labels/filter/` | POST de lectura con filtros JSON |
-| `/api/v1/example/labels/<uuid>/` | GET, PUT/PATCH parcial y DELETE lógico |
-| `/api/v1/example/labels/statistics/` | GET agregado, `?minimum_entries=1` |
-| `/api/v1/example/entries/` | GET y POST; crear con `title` y `label` (UUID) |
-| `/api/v1/example/entries/filter/` | POST de lectura con filtros JSON |
-| `/api/v1/example/entries/<uuid>/` | GET, PUT/PATCH parcial y DELETE lógico |
-| `/api/v1/example/entries/<uuid>/finalize/` | POST con `{"summary":"Listo"}`; llama al service |
-
-Flujo de ejemplo: crear una etiqueta con `{"name":"General"}`, crear una entrada
-con su UUID, y finalizarla como su autor con la capacidad `example.write`. Debe estar activa, en
-borrador y asociada a una etiqueta activa. Estado, resumen y fecha de finalización
-no son editables por CRUD. Repetir la finalización se rechaza.
-
-La tarea `applications.example.tasks.finalize_entry` recibe `entry_id` y `actor_id`
-como UUID en texto, además de `summary`; valida, resuelve entidades y llama al
-mismo service. Si falta una entidad, registra el caso y termina sin error.
-No programa reintentos automáticos: la finalización no es
-idempotente. Si se encola desde una escritura, hacerlo mediante
-`transaction.on_commit` en el service que controla esa escritura.
-
-Las respuestas de aplicación tienen `success`, `status`, `message`, `data` y
-`meta`; los errores incluyen `error`. La paginación vive en `meta.pagination`.
-El endpoint OpenAPI entrega el documento estándar directamente.
-
-Se incluyen UserSession y SecurityEvent genéricos. Los logins fallidos también
-se registran; los bloqueos se configuran con USER_LOCKOUT_THRESHOLD y
-USER_LOCKOUT_SECONDS. Logout y cambio de contraseña revocan todos los refresh;
-los access existentes conservan su vigencia. Desactivar una cuenta bloquea
-access y refresh. El [contrato completo de auth](docs/auth.md) describe cada caso.
-
-## Verificar
-
-Ejecutar desde la raíz del proyecto copiado, con el entorno virtual activo:
-
-```bash
-flake8 .
-lint-imports --no-cache
-DJANGO_SETTINGS_MODULE=config.settings.test python manage.py check
-DJANGO_SETTINGS_MODULE=config.settings.test python manage.py makemigrations --check --dry-run
-DJANGO_SETTINGS_MODULE=config.settings.test python manage.py show_urls
-DJANGO_SETTINGS_MODULE=config.settings.test python manage.py spectacular \
-  --validate --fail-on-warn --format openapi-json --file schema.json
-pytest -v
-```
-
-La configuración de pytest selecciona `config.settings.test`. Con
-`TEST_DATABASE_URL` se ejecuta contra PostgreSQL; sin esa variable y sin `.env`
-que la defina utiliza SQLite en memoria. Para forzar el modo rápido:
+## Tests y calidad
 
 ```bash
 TEST_DATABASE_URL=sqlite://:memory: pytest -v
+flake8 .
+lint-imports --no-cache
+DJANGO_SETTINGS_MODULE=config.settings.test python manage.py check
+DJANGO_SETTINGS_MODULE=config.settings.test python manage.py spectacular --validate --fail-on-warn --format openapi-json
 ```
 
-SQLite omite las dos pruebas de bloqueo concurrente, porque no implementa
-`select_for_update`. La CI usa PostgreSQL y ejecuta ambas. Los tests de
-Celery usan modo eager y broker en memoria; no requieren un worker ni Redis.
+SQLite omite dos pruebas de concurrencia. Para ejecutarlas, configura
+`TEST_DATABASE_URL` con PostgreSQL y usa `pytest -v`, como en
+[CI](.github/workflows/ci.yml). Las pruebas de Celery usan modo eager y broker
+en memoria; no necesitan Redis ni worker externo.
 
-El workflow incluido en `.github/workflows/ci.yml` queda activo al copiar la
-plantilla a la raíz del nuevo repositorio. GitHub no descubre workflows anidados
-en `template/.github/` dentro del repositorio de origen. La configuración incluye
-flake8, cuatro contratos de imports, checks, validación OpenAPI y pytest.
+Consulta el alcance y los resultados históricos en [verificación](docs/verification.md).
 
-## Producción y alcance
+---
+
+## Migraciones
+
+Versiona las migraciones junto con los cambios de modelos para reproducir el
+esquema entre entornos:
+
+```bash
+python manage.py makemigrations
+DJANGO_SETTINGS_MODULE=config.settings.test python manage.py makemigrations --check --dry-run
+python manage.py migrate
+```
+
+---
+
+## Producción
+
+Configura una clave propia, PostgreSQL, hosts y CORS del despliegue, y Redis
+si utilizas Celery. TLS termina en la infraestructura; ajusta
+`SECURE_SSL_REDIRECT` al esquema real del proxy.
 
 ```bash
 python -m pip install -r requirements/production.txt
@@ -178,21 +199,39 @@ DJANGO_SETTINGS_MODULE=config.settings.production gunicorn config.wsgi:applicati
 DJANGO_SETTINGS_MODULE=config.settings.production celery -A config worker --loglevel=info
 ```
 
-Configura una clave propia, PostgreSQL, Redis, hosts y CORS mediante variables
-del entorno. TLS debe terminar en la infraestructura de despliegue; ajusta
-`SECURE_SSL_REDIRECT` al esquema real del proxy.
+---
 
-Se omiten admin, Swagger/Redoc HTML, templates, media y estáticos. Aunque el
-origen tiene administración, cargas de archivos y documentos generados, el
-ejemplo no los necesita. OpenAPI sigue disponible en JSON para clientes externos.
+## Documentación
 
-Para adaptar: sustituir el módulo `example`, actualizar el título OpenAPI y el
-nombre de la app Celery, definir las reglas del negocio nuevo y crear su primera
-migración antes de desplegar. No se incluyen datos iniciales.
+| Tema | Documento |
+| --- | --- |
+| Índice completo | [docs/INDEX.md](docs/INDEX.md) |
+| Arquitectura | [docs/architecture.md](docs/architecture.md) |
+| Convenciones | [docs/app-structure.md](docs/app-structure.md) |
+| Usuarios, autenticación y permisos | [docs/auth.md](docs/auth.md) |
+| Crear un módulo | [docs/new-module-checklist.md](docs/new-module-checklist.md) |
+| Alcance del framework | [docs/core-extraction.md](docs/core-extraction.md) |
+| Verificación | [docs/verification.md](docs/verification.md) |
 
-- [Arquitectura](docs/architecture.md)
-- [Estructura y convenciones](docs/app-structure.md)
-- [Usuarios, roles y autenticación](docs/auth.md)
-- [Checklist de un módulo nuevo](docs/new-module-checklist.md)
-- [Extracción y hallazgos del origen](docs/core-extraction.md)
-- [Verificación realizada](docs/verification.md)
+---
+
+## Estado y alcance
+
+La plantilla entrega una API JSON con `users` como base y `example` como referencia.
+Al crear un proyecto, sustituye el ejemplo por tus módulos, adapta el título
+OpenAPI en `config/settings/base.py` y el nombre de Celery en `config/celery.py`.
+Sigue el [checklist de módulos](docs/new-module-checklist.md).
+
+---
+
+## Desarrollo con agentes
+
+[AGENTS.md](AGENTS.md) reúne las reglas de trabajo del repositorio.
+Todo agente debe leer íntegramente la documentación de `docs/` antes de
+planificar o modificar el proyecto, empezando por su [índice](docs/INDEX.md).
+
+---
+
+## Autor
+
+Desarrollado por [Jeampieer](https://portfolio-jeampieer.vercel.app/).

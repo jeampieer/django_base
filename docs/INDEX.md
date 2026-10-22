@@ -18,6 +18,7 @@
 | Documento | Contenido | Cuándo consultarlo |
 | --- | --- | --- |
 | [Usuarios y autenticación](auth.md) | Usuario configurable, roles, capacidades, permisos por objeto, JWT, sesiones y auditoría. | Antes de migrar por primera vez o cambiar identidad, acceso y seguridad. |
+| [Django Admin](admin.md) | Panel nativo, BaseModelAdmin, services, auditoría y estáticos. | Al administrar datos, registrar modelos o desplegar el panel. |
 
 ---
 

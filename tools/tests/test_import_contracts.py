@@ -33,6 +33,14 @@ def write_module(root: Path, module: str, source: str = "") -> None:
     ("applications.first.services.use", "applications.users.selectors.user", False),
     ("applications.first.services.use", "applications.users.permissions.rules", False),
     ("applications.first.services.use", "applications.users.services.create_user", True),
+    ("applications.first.admin", "applications.first.services.use", True),
+    ("applications.first.admin", "applications.first.forms", True),
+    ("applications.first.backends", "applications.first.services.use", True),
+    ("applications.first.services.use", "applications.first.admin", False),
+    ("applications.first.models", "applications.first.forms", False),
+    ("applications.first.admin", "applications.users.models", False),
+    ("applications.first.forms", "applications.first.services.use", False),
+    ("applications.first.services.use", "applications.first.forms", False),
 ])
 def test_real_configuration_rejects_violations(tmp_path: Path, importer: str, imported: str, kept: bool) -> None:
     for module in ("applications.first.models", "applications.second.models", "core.helper", "config.settings"):

@@ -8,6 +8,13 @@ from django.db.models import Q
 from core.auth.roles import has_capability, role_level
 
 
+def can_access_admin(user: Any) -> bool:
+    return bool(
+        user.is_authenticated and user.is_active and user.is_staff and user.is_superuser
+        and user.role in settings.USER_ROLES
+    )
+
+
 def can_assign_role(*, actor: Any, role: str) -> bool:
     if role not in settings.USER_ROLES or not actor.is_active:
         return False

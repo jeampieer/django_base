@@ -42,6 +42,43 @@ configuración basada en `.env.example`, sin credenciales existentes. Los
 artefactos se guardan fuera del repositorio y se eliminan junto con el entorno
 y la instancia PostgreSQL al terminar.
 
+## Django Admin: verificación del 22 de octubre de 2026
+
+Se ejecutó la integración en Python 3.11.6, Django 5.2.8 y PostgreSQL 14.17,
+con un entorno virtual nuevo y las dependencias declaradas. PostgreSQL usó un
+cluster temporal aislado en el puerto 55439, sin credenciales ni bases del
+proyecto de referencia o de Alvia. No se modificó el origen Iperc.
+
+| Comprobación | Resultado |
+| --- | --- |
+| `python -m pip check` | Sin dependencias incompatibles |
+| `flake8 .` | Sin hallazgos |
+| `lint-imports --no-cache` | 5 contratos conservados, 0 rotos |
+| `python manage.py check` | Sin errores |
+| `python manage.py makemigrations --check --dry-run` | Sin cambios pendientes |
+| `python manage.py show_urls` | 68 rutas; incluye `/admin/` y operaciones individuales |
+| `python manage.py spectacular --validate --fail-on-warn --format openapi-json` | Válido, sin warnings |
+| `python manage.py collectstatic --noinput` | 168 archivos recopilados correctamente |
+| `pytest --cov --cov-report=term-missing` con PostgreSQL | **170 passed**, sin omisiones; **96,34 %** |
+
+Los comandos Django utilizaron `config.settings.test`. Se incluyen pruebas de
+acceso real al panel, CSRF, bloqueo persistente, campos protegidos, CRUD auditado,
+rollback del formulario de usuarios, contraseñas, revocación de sesiones web,
+auditoría de solo lectura, finalización y límites de imports. La API mantiene
+JWT como autenticación y rechaza peticiones autenticadas solo con la cookie
+del panel. Las pruebas de concurrencia se ejecutaron sobre PostgreSQL.
+
+Se revisaron visualmente login, índice, listado de usuarios, formulario nativo,
+auditoría colapsable y cambio de contraseña en Chrome, usando una base SQLite
+temporal y una cuenta ficticia. Los estáticos y las plantillas nativas se
+renderizaron correctamente. La nueva migración de usuarios y las migraciones
+estándar de admin/sesiones se aplicaron correctamente en esa base vacía.
+
+No se ejecutaron GitHub Actions ni un despliegue remoto; el workflow mantiene
+PostgreSQL 16. El backend de sesiones de BD y la dependencia del adaptador
+respecto de Django 5.2.8 se explican en [admin.md](admin.md). Los recursos de
+revisión, datos y servidores temporales se retiran al finalizar.
+
 ## Verificación con cobertura: 21 de octubre de 2026
 
 Se verificó una copia independiente de los entregables con un venv nuevo,

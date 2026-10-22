@@ -145,6 +145,20 @@ Los registros sin usuario no aparecen en una ruta por UUID; se consultan en BD.
 UserSession representa intentos de autenticación, no un inventario exacto de
 tokens todavía válidos.
 
+## Panel administrativo
+
+`/admin/` ofrece la gestión interna con formularios nativos; requiere usuario
+activo, staff y superusuario con rol configurado. Comparte autenticación,
+bloqueo y auditoría con la API sin emitir JWT. El motivo `ADMIN_ACCESS_DENIED`
+identifica credenciales válidas sin acceso al panel. Los intentos de acceso y
+eventos se consultan en solo lectura.
+
+Los cambios combinados de perfil, rol y estado se coordinan en una transacción
+del service. Contraseñas y finalización usan sus casos de uso específicos.
+Logout, cambio de contraseña y desactivación revocan también sesiones web;
+el cambio propio de contraseña cierra la sesión actual. La cookie del admin
+no autentica la API. Ver [admin.md](admin.md) para operaciones y despliegue.
+
 ## Conexión con otros módulos
 
 FK: `settings.AUTH_USER_MODEL`. Resolución de identidad: `get_user_model()` de

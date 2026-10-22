@@ -7,6 +7,7 @@ base reutilizable para nuevos proyectos.
 Plantilla reutilizable de backend REST con Django y Django REST Framework.
 Incluye autenticación, gestión de usuarios y un módulo de ejemplo para construir
 nuevos proyectos con arquitectura modular por capas y Service Layer.
+Incluye un panel Django Admin nativo para gestión interna y auditoría.
 Código en inglés; documentación en español.
 
 ---
@@ -119,6 +120,12 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
+El panel está en `http://127.0.0.1:8000/admin/`; usa la cuenta creada con
+`createsuperuser`. Solo admite superusuarios activos con acceso staff y rol
+configurado. Usuarios, etiquetas y entradas se gestionan desde formularios
+nativos; intentos de acceso y eventos de seguridad son de solo lectura.
+Consulta [Django Admin](docs/admin.md) para el patrón reutilizable y sus límites.
+
 ### Worker Celery
 
 En otra terminal, con el entorno virtual activo y Redis disponible:
@@ -199,9 +206,13 @@ si utilizas Celery. TLS termina en la infraestructura; ajusta
 ```bash
 python -m pip install -r requirements/production.txt
 DJANGO_SETTINGS_MODULE=config.settings.production python manage.py migrate
+DJANGO_SETTINGS_MODULE=config.settings.production python manage.py collectstatic --noinput
 DJANGO_SETTINGS_MODULE=config.settings.production gunicorn config.wsgi:application
 DJANGO_SETTINGS_MODULE=config.settings.production celery -A config worker --loglevel=info
 ```
+
+Servir `/static/` desde `staticfiles/` mediante la infraestructura del despliegue;
+Gunicorn no sirve los estáticos del panel. El acceso de producción utiliza HTTPS.
 
 ---
 
@@ -213,6 +224,7 @@ DJANGO_SETTINGS_MODULE=config.settings.production celery -A config worker --logl
 | Arquitectura | [docs/architecture.md](docs/architecture.md) |
 | Convenciones | [docs/app-structure.md](docs/app-structure.md) |
 | Usuarios, autenticación y permisos | [docs/auth.md](docs/auth.md) |
+| Django Admin | [docs/admin.md](docs/admin.md) |
 | Crear un módulo | [docs/new-module-checklist.md](docs/new-module-checklist.md) |
 | Alcance del framework | [docs/core-extraction.md](docs/core-extraction.md) |
 | Verificación | [docs/verification.md](docs/verification.md) |
@@ -221,7 +233,8 @@ DJANGO_SETTINGS_MODULE=config.settings.production celery -A config worker --logl
 
 ## Estado y alcance
 
-La plantilla entrega una API JSON con `users` como base y `example` como referencia.
+La plantilla entrega una API JSON y un panel Django Admin nativo, con `users`
+como base y `example` como referencia.
 Al crear un proyecto, sustituye el ejemplo por tus módulos, adapta el título
 OpenAPI en `config/settings/base.py` y el nombre de Celery en `config/celery.py`.
 Sigue el [checklist de módulos](docs/new-module-checklist.md).

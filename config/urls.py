@@ -1,3 +1,4 @@
+from django.contrib import admin
 from django.urls import include, path
 from drf_spectacular.renderers import OpenApiJsonRenderer
 from drf_spectacular.views import SpectacularAPIView
@@ -5,6 +6,7 @@ from drf_spectacular.views import SpectacularAPIView
 from core.api.views.health import HealthCheckView, PingView
 
 urlpatterns = [
+    path("admin/", admin.site.urls),
     path("health/", HealthCheckView.as_view(), name="health"),
     path("health/ping/", PingView.as_view(), name="health-ping"),
     path("api/v1/", include("applications.users.urls", namespace="users")),

@@ -4,7 +4,9 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from applications.users.models import SecurityEventActionChoices, User
 from applications.users.permissions.rules import can_edit_profile
-from applications.users.services._shared import lock_users, record_event, revoke_refreshes, validate_new_password
+from applications.users.services._shared import (
+    lock_users, record_event, revoke_browser_sessions, revoke_refreshes, validate_new_password,
+)
 
 
 class ChangePasswordService:
@@ -25,5 +27,6 @@ class ChangePasswordService:
         target.last_password_change = timezone.now()
         target.save(user=actor)
         revoke_refreshes(user=target)
+        revoke_browser_sessions(user=target)
         record_event(action=SecurityEventActionChoices.PASSWORD_CHANGED, actor=actor, target=target)
         return target

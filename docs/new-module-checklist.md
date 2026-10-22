@@ -12,6 +12,8 @@
 - [ ] Declarar la capacidad de la policy y asignarla a roles en `USER_ROLES`; no basarse en `is_staff`.
 - [ ] Añadir permisos por objeto cuando aplique y revalidarlos en el service; probar el límite de imports con `users`.
 - [ ] Si requiere Celery/comando/interfaz pública, crear únicamente esa pieza.
+- [ ] Si expone modelos en admin, usar `BaseModelAdmin`, registrar explícitamente
+  y delegar reglas en services; auditoría en solo lectura y sin eliminación física.
 - [ ] Incluir tests de comportamiento para todo código nuevo del módulo: flujos, reglas, errores y rollback;
   evitar imports de modelos ajenos.
 - [ ] Ejecutar flake8, `lint-imports`, checks, `makemigrations --check`, OpenAPI y

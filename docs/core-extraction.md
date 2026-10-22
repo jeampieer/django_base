@@ -19,6 +19,7 @@ no una copia íntegra del framework.
 | `core/api/exceptions.py` | Manejador global genérico | DRF, 404, filtros, integridad y errores internos; sin mensajes por constraint del negocio |
 | `core/api/views/health.py` | HealthCheckView y PingView | ApiResponse, 503 para dependencias fallidas y sin detalles internos públicos |
 | JWT y auth original | `applications/users/api_views/authentication.py` y services | Conserva duraciones y refresh sin rotación; casos de autenticación separados de representación |
+| `core/admin/` | `BaseModelAdmin` y base de solo lectura | Panel nativo, auditoría colapsable y formatos; sin historial/import-export; integración con services |
 
 `core/api/openapi.py` es un helper documental nuevo para describir el envoltorio
 real. `core/auth/roles.py` y `HasModelPolicy` son adaptaciones explícitas, no
@@ -31,7 +32,7 @@ funciones que se atribuyan al origen. No introducen reglas del negocio nuevo.
 - Traducciones de constraints de negocio en `core/utils/db_errors.py`.
 - Views de sincronización/documentación de negocio y helpers PDF/Excel,
   uploads, validadores geográficos y de archivos: no tienen uso en el ejemplo.
-- Admin, historial/import-export, storage, push, correo, schedulers y backends de
+- Historial/import-export, storage, push, correo, schedulers y backends de
   resultados Celery: no son necesarios para los patrones pedidos.
 - Helpers sin consumidores, bulk CRUD, managers de soft delete y logging/middleware
   extendidos: se documenta un subconjunto verificable en lugar de copiarlos sin uso.
@@ -44,6 +45,11 @@ logout, rol y estado. Los eventos no incluyen operaciones de otros dominios.
 Crear/actualizar usuarios se trasladó desde serializers a services; los permisos
 por jerarquía también se revalidan allí. Se eliminaron los adaptadores JWT
 anteriores de core para mantener una única implementación en users.
+
+La ampliación del admin se documenta en [admin.md](admin.md): mantiene el patrón
+visual y reutilizable del origen, adaptando nombres del usuario, límites
+transaccionales, seguridad, borrado lógico y operaciones con services. El
+proyecto de origen se usa únicamente como referencia y no se modifica.
 
 ## Hallazgos estáticos en el original
 

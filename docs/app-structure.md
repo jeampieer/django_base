@@ -23,7 +23,8 @@ límites en [architecture.md](architecture.md).
 | `managers/` | QuerySet reutilizable de un modelo o manager técnico propio | En `users`; no en `example` |
 | `management/commands/` | Primer comando operativo; resuelve/valida y llama services | No |
 | `public.py` | Primer contrato estable que otro módulo necesita consumir | No |
-| `admin.py` | Solo al habilitar explícitamente administración Django | No |
+| `admin.py` | Modelos del panel; CRUD auditado o adaptador a service | Sí |
+| `forms.py` | Contratos HTML que necesitan definición propia | Sí |
 
 No crear carpetas vacías para anticipar crecimiento. Los `__init__.py` necesarios
 para paquetes Python sí se incluyen. `managers/` no reemplaza los selectores:
@@ -35,6 +36,11 @@ contiene la regla de imports, fuera de las aplicaciones de negocio.
 No hay `templates/`, `media/`, assets de frontend, `management/` ni `managers/`
 vacíos. Archivos o plantillas para documentos/correos se añaden al existir un
 caso concreto que los use; no forman parte del ejemplo.
+
+El panel usa las plantillas y estáticos distribuidos con Django. Sus bases
+están en `core/admin/`; ver [admin.md](admin.md). El sitio se registra de forma
+explícita y solo admite superusuarios activos con acceso staff. Admin y
+backends son adaptadores de entrada; formularios no importan services.
 
 ## Modelos y migraciones
 

@@ -4,7 +4,7 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from applications.users.models import SecurityEventActionChoices, SessionStatusChoices, User, UserSession
 from applications.users.permissions.rules import can_manage_user
-from applications.users.services._shared import lock_users, record_event, revoke_refreshes
+from applications.users.services._shared import lock_users, record_event, revoke_browser_sessions, revoke_refreshes
 
 
 class SetUserActiveService:
@@ -28,6 +28,7 @@ class SetUserActiveService:
         action = SecurityEventActionChoices.USER_ACTIVATED
         if not is_active:
             revoke_refreshes(user=target)
+            revoke_browser_sessions(user=target)
             UserSession.objects.filter(user=target, status=SessionStatusChoices.SUCCESS, logout_at__isnull=True).update(
                 logout_at=timezone.now(),
             )

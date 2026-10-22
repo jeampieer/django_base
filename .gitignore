@@ -12,3 +12,4 @@ htmlcov/
 coverage.xml
 *.sqlite3
 schema.json
+staticfiles/

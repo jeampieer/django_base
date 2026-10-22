@@ -3,8 +3,10 @@
 from typing import Any
 
 from django.contrib.auth.password_validation import validate_password
+from django.contrib.sessions.models import Session
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db.models import Q
+from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 
@@ -53,3 +55,13 @@ def record_event(*, action: str, actor: User | None, target: User, ip_address: s
 def revoke_refreshes(*, user: User) -> None:
     for token in OutstandingToken.objects.filter(user=user):
         BlacklistedToken.objects.get_or_create(token=token)
+
+
+def revoke_browser_sessions(*, user: User) -> None:
+    # Las sesiones de Django en BD no tienen FK de usuario. Solo se inspeccionan las vigentes.
+    keys = [
+        session.session_key for session in Session.objects.filter(expire_date__gt=timezone.now()).iterator()
+        if session.get_decoded().get("_auth_user_id") == str(user.pk)
+    ]
+    if keys:
+        Session.objects.filter(session_key__in=keys).delete()

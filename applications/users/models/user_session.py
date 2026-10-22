@@ -15,6 +15,7 @@ class SessionFailureChoices(models.TextChoices):
     INACTIVE_ACCOUNT = "INACTIVE_ACCOUNT", "Cuenta inactiva"
     ACCOUNT_LOCKED = "ACCOUNT_LOCKED", "Cuenta bloqueada"
     INVALID_ROLE = "INVALID_ROLE", "Rol no configurado"
+    ADMIN_ACCESS_DENIED = "ADMIN_ACCESS_DENIED", "Acceso administrativo no autorizado"
 
 
 class UserSession(models.Model):

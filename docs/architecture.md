@@ -20,6 +20,8 @@ example/
 ├── apps.py                 registro de policies
 ├── urls.py                 rutas del módulo
 ├── policies.py             autorización por rol/modelo
+├── admin.py                CRUD nativo auditado y adaptador de finalización
+├── forms.py                entrada HTML de finalización
 ├── tasks.py                adaptador Celery
 ├── models/                 Label y Entry
 ├── migrations/             esquema versionado
@@ -32,7 +34,7 @@ example/
 └── tests/                  flujos, service, selector, permisos y tarea
 ```
 
-`managers/`, `management/commands/`, `public.py` y `admin.py` no existen en el
+`managers/`, `management/commands/` y `public.py` no existen en el
 ejemplo. Las condiciones para crearlos y la lista de piezas posibles se definen
 en [app-structure.md](app-structure.md#cuándo-crear-cada-pieza). Ninguna carpeta
 opcional se genera vacía.
@@ -55,6 +57,8 @@ comandos propios, firmas, dispositivos ni MFA. Su detalle está en [auth.md](aut
 | `policies.py` | Acciones, campos y alcance según rol | Mutaciones |
 | `permissions/` | Autorización por instancia y estado | Mutaciones |
 | `tasks.py` | Validar mensaje, resolver entidades y llamar service | Reglas o escrituras directas |
+| `admin.py`, `admin_site.py`, `backends.py` | Adaptadores administrativos y autenticación | Reglas de negocio o transacciones propias |
+| `forms.py` | Validación y representación de entrada HTML | Escrituras de negocio |
 
 La auditoría y el borrado lógico genéricos de `BaseModel` son infraestructura
 extraída, no decisiones de negocio. La validación de un proceso sigue en el
@@ -75,6 +79,12 @@ El método público que agrupa la escritura define el límite transaccional.
 No se habilita `ATOMIC_REQUESTS`. Un CRUD de una escritura usa el comportamiento
 normal del ORM; si necesita varias escrituras coordinadas, deja de ser CRUD
 simple y pasa a un service. No hay CRUD por lotes en esta extracción.
+
+El panel usa el patrón nativo de [Django Admin](admin.md). Su adaptador omite
+el `atomic` exterior del formulario estándar para mantener el límite en los
+services. El CRUD simple de etiquetas/entradas usa ORM auditado; gestión de
+identidad y finalización llaman services. Los registros técnicos de Django
+(sesiones y LogEntry) no reemplazan la auditoría del dominio.
 
 Las validaciones que dependen del estado se repiten dentro de la transacción.
 Si hay competencia por el mismo registro, usar `select_for_update` allí. El

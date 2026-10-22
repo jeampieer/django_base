@@ -17,9 +17,11 @@ name = Entrada hacia services y selectors hacia models
 type = layers
 containers = applications.*
 layers =
-    (api_views) : (tasks)
+    (admin) : (admin_site)
+    (api_views) : (tasks) : (backends)
     (schemas)
     (services)
+    (forms)
     (selectors)
     (serializers) : (permissions) : (policies)
     (models)
@@ -37,3 +39,9 @@ name = Los modulos no importan config
 type = forbidden
 source_modules = applications
 forbidden_modules = config
+
+[importlinter:contract:service_forms]
+name = Los services no dependen de formularios HTML
+type = forbidden
+source_modules = applications.*.services
+forbidden_modules = applications.*.forms
